@@ -8789,6 +8789,41 @@ ${expression ? 'Expression: "' + expression + '"\n\n' : ""}`, el);
     });
   });
 
+  // js/features/supportMercure.js
+  var mercureUrl = null;
+  function getMercureUrl() {
+    if (!mercureUrl && document.querySelector("[data-mercure-url]")) {
+      mercureUrl = document.querySelector("[data-mercure-url]").getAttribute("data-mercure-url");
+    }
+    return mercureUrl;
+  }
+  on("effects", (component, effects) => {
+    const listeners2 = effects.listeners || [];
+    listeners2.forEach((event) => {
+      if (event.startsWith("mercure")) {
+        const mercureUrl2 = getMercureUrl();
+        if (!mercureUrl2) {
+          console.warn("Warning: 'data-mercure-url' attribute not found. Ensure it is present in the HTML.");
+          return;
+        }
+        if (typeof EventSource === "undefined") {
+          console.warn("Warning: EventSource API (for Mercure) not available. Check browser compatibility.");
+          return;
+        }
+        const eventParts = event.split("mercure:");
+        const [s1, topic] = eventParts;
+        const url = `${mercureUrl2}?topic=${topic}`;
+        const mercureEventSource = new EventSource(url, { withCredentials: true });
+        mercureEventSource.onmessage = (e) => {
+          const data2 = JSON.parse(e.data);
+          dispatchSelf(component, event, [data2]);
+        };
+        mercureEventSource.onerror = (e) => {
+        };
+      }
+    });
+  });
+
   // js/directives/wire-transition.js
   on("morph.added", ({ el }) => {
     el.__addedByMorph = true;
